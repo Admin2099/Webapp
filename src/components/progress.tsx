@@ -1,3 +1,4 @@
+
 "use client"
 import { useState, useEffect } from "react";
 import {
@@ -137,7 +138,7 @@ export function Progress() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {progressStats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -156,7 +157,7 @@ export function Progress() {
             <CardTitle>AI Tutor Progress</CardTitle>
             <CardDescription>Your chapter progress in AI-generated courses.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-3">
+          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {(['Beginner', 'Intermediate', 'Advanced'] as SkillLevel[]).map(level => {
               const progress = aiTutorProgress.find(p => p.level === level);
               return (

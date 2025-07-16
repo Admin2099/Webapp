@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -13,6 +14,7 @@ import { InterviewPrep } from "@/components/interview-prep"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -55,13 +57,18 @@ export default function DashboardPage() {
       </header>
       <main className="flex-1 p-4 md:p-8 lg:p-10">
         <Tabs defaultValue="practice" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 max-w-2xl mx-auto mb-8">
-            <TabsTrigger value="practice">Daily Practice</TabsTrigger>
-            <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
-            <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
-            <TabsTrigger value="interview">Interview Prep</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-center mb-8">
+            <ScrollArea className="w-full max-w-sm sm:max-w-xl md:max-w-2xl whitespace-nowrap rounded-lg">
+                <TabsList className="inline-grid w-max grid-cols-5">
+                    <TabsTrigger value="practice">Daily Practice</TabsTrigger>
+                    <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
+                    <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
+                    <TabsTrigger value="interview">Interview Prep</TabsTrigger>
+                    <TabsTrigger value="progress">Progress</TabsTrigger>
+                </TabsList>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
           <TabsContent value="practice">
             <DailyPractice />
           </TabsContent>

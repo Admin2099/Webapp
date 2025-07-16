@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -113,7 +114,7 @@ export function Tutorials() {
           Follow our structured tutorials to master data analysis technologies.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {tutorials.map((tutorial) => {
           const isCompleted = completedTutorials.includes(tutorial.title);
           const progress = isCompleted ? 100 : 0;
