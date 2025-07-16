@@ -1,45 +1,29 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DailyPractice } from "@/components/daily-practice"
-import { Tutorials } from "@/components/tutorials"
-import { Progress } from "@/components/progress"
-import { Logo } from "@/components/logo"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AiTutor } from "@/components/ai-tutor"
+"use client";
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // We only want to redirect once the loading state is false.
+    if (!loading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [user, loading, router]);
+
+  // Render a loading spinner while the auth state is being determined.
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
-        <Logo />
-        <div className="ml-auto">
-          <Avatar>
-            <AvatarImage src="https://placehold.co/40x40.png" alt="Data Analyst" data-ai-hint="avatar user" />
-            <AvatarFallback>DA</AvatarFallback>
-          </Avatar>
-        </div>
-      </header>
-      <main className="flex-1 p-4 md:p-8 lg:p-10">
-        <Tabs defaultValue="practice" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto mb-8">
-            <TabsTrigger value="practice">Daily Practice</TabsTrigger>
-            <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
-            <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
-          </TabsList>
-          <TabsContent value="practice">
-            <DailyPractice />
-          </TabsContent>
-           <TabsContent value="tutor">
-            <AiTutor />
-          </TabsContent>
-          <TabsContent value="tutorials">
-            <Tutorials />
-          </TabsContent>
-          <TabsContent value="progress">
-            <Progress />
-          </TabsContent>
-        </Tabs>
-      </main>
+    <div className="flex min-h-screen w-full items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
     </div>
   );
 }

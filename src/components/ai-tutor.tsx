@@ -9,8 +9,7 @@ import {
   GenerateTutorialOutput,
 } from "@/ai/flows/generate-tutorial";
 import {
-  evaluateSolution,
-  EvaluateSolutionOutput,
+  evaluateSolution
 } from "@/ai/flows/evaluate-solution";
 import useLocalStorage from "@/hooks/use-local-storage";
 
@@ -28,7 +27,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import {
   Select,
@@ -54,7 +52,7 @@ import {
   Bookmark,
   CheckCircle,
   XCircle,
-  ChevronRight,
+  RotateCcw
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -87,20 +85,31 @@ type AssessmentResults = {
   allCorrect: boolean;
 };
 
+type SkillLevel = "Beginner" | "Intermediate" | "Advanced";
+
+type AiTutorCourseData = {
+  tutorialData: GenerateTutorialOutput;
+  completedChapters: boolean[];
+  topic: string;
+};
+
+type AiTutorStorage = {
+  [key in SkillLevel]?: AiTutorCourseData;
+};
+
 export function AiTutor() {
   const [view, setView] = useState<"FORM" | "GENERATING" | "TUTORIAL">(
     "FORM"
   );
-  const [tutorialData, setTutorialData] =
-    useState<GenerateTutorialOutput | null>(null);
+  
+  const [courses, setCourses] = useLocalStorage<AiTutorStorage>('aiTutor_courses', {});
+  const [currentCourse, setCurrentCourse] = useState<AiTutorCourseData | null>(null);
+  
   const [formValues, setFormValues] = useState({
     topic: "SQL",
-    skillLevel: "Beginner",
+    skillLevel: "Beginner" as SkillLevel,
   });
-  const [completedChapters, setCompletedChapters] = useLocalStorage<boolean[]>(
-    `progress-${formValues.topic}-${formValues.skillLevel}`,
-    []
-  );
+
   const [activeChapter, setActiveChapter] = useState<string | undefined>();
   const [userAnswers, setUserAnswers] = useState<UserAnswers>({
     mcqs: {},
@@ -116,12 +125,21 @@ export function AiTutor() {
     resolver: zodResolver(tutorFormSchema),
     defaultValues: formValues,
   });
+  
+  const allChaptersComplete = currentCourse?.completedChapters.every(Boolean);
 
   useEffect(() => {
-    const key = `progress-${formValues.topic}-${formValues.skillLevel}`;
-    const stored = localStorage.getItem(key);
-    setCompletedChapters(stored ? JSON.parse(stored) : []);
-  }, [formValues, setCompletedChapters]);
+    const selectedSkillLevel = form.getValues("skillLevel");
+    const courseData = courses[selectedSkillLevel];
+    if (courseData) {
+      setCurrentCourse(courseData);
+      setView("TUTORIAL");
+    } else {
+      setCurrentCourse(null);
+      setView("FORM");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, form.watch("skillLevel")]);
   
   useEffect(() => {
     setUserAnswers({ mcqs: {}, openEnded: {} });
@@ -130,15 +148,27 @@ export function AiTutor() {
 
   async function onSubmit(values: z.infer<typeof tutorFormSchema>) {
     setView("GENERATING");
-    setTutorialData(null);
     setAssessmentResults(null);
     setFormValues(values);
+    
+    // Clear old data for this skill level
+    const newCourses = {...courses};
+    delete newCourses[values.skillLevel];
+    setCourses(newCourses);
+    setCurrentCourse(null);
 
     try {
       const result = await generateTutorial(values);
-      setTutorialData(result);
-      setCompletedChapters(new Array(result.chapters.length).fill(false));
+      const newCourseData: AiTutorCourseData = {
+        tutorialData: result,
+        completedChapters: new Array(result.chapters.length).fill(false),
+        topic: values.topic,
+      };
+      
+      setCourses(prev => ({ ...prev, [values.skillLevel]: newCourseData }));
+      setCurrentCourse(newCourseData);
       setView("TUTORIAL");
+
     } catch (error) {
       console.error(error);
       toast({
@@ -166,11 +196,11 @@ export function AiTutor() {
   };
 
   const handleSubmitAssessment = async (chapterIndex: number) => {
-    if (!tutorialData) return;
+    if (!currentCourse) return;
     setIsEvaluating(true);
     setAssessmentResults(null);
 
-    const chapter = tutorialData.chapters[chapterIndex];
+    const chapter = currentCourse.tutorialData.chapters[chapterIndex];
     const { mcqs, openEndedQuestions } = chapter.assessment;
 
     const mcqResults = mcqs.map(
@@ -185,7 +215,7 @@ export function AiTutor() {
         exerciseDescription: q.question,
         solution: q.solution,
         userAnswer,
-        technology: formValues.topic,
+        technology: currentCourse.topic,
       });
     });
 
@@ -201,10 +231,15 @@ export function AiTutor() {
           title: "Chapter Complete!",
           description: "Great job! You've unlocked the next chapter.",
         });
-        const newProgress = [...completedChapters];
+        
+        const newProgress = [...currentCourse.completedChapters];
         newProgress[chapterIndex] = true;
-        setCompletedChapters(newProgress);
-        setUserAnswers({ mcqs: {}, openEnded: {} }); // Reset answers
+        
+        const updatedCourseData = { ...currentCourse, completedChapters: newProgress };
+        setCurrentCourse(updatedCourseData);
+        setCourses(prev => ({...prev, [form.getValues("skillLevel")]: updatedCourseData}));
+
+        setUserAnswers({ mcqs: {}, openEnded: {} });
       } else {
         toast({
           variant: "destructive",
@@ -225,8 +260,19 @@ export function AiTutor() {
     }
   };
 
+  const resetTutorial = () => {
+    const skillLevel = form.getValues("skillLevel");
+    setCourses(prev => {
+        const newCourses = { ...prev };
+        delete newCourses[skillLevel];
+        return newCourses;
+    });
+    setCurrentCourse(null);
+    setView("FORM");
+  }
+  
   const renderInitialForm = () => (
-    <Card className="max-w-4xl mx-auto">
+     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>AI Tutor</CardTitle>
         <CardDescription>
@@ -281,10 +327,10 @@ export function AiTutor() {
               )}
             />
             <div className="w-full sm:w-auto self-end">
-              <Button type="submit" className="w-full bg-gradient-to-r from-gradient-pink to-gradient-orange text-primary-foreground">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Course
-              </Button>
+                <Button type="submit" className="w-full bg-gradient-to-r from-gradient-pink to-gradient-orange text-primary-foreground">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Course
+                </Button>
             </div>
           </form>
         </Form>
@@ -303,15 +349,16 @@ export function AiTutor() {
   );
 
   const renderTutorialView = () => (
+    currentCourse &&
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">{tutorialData?.title}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">{tutorialData?.introduction}</p>
+        <h1 className="text-4xl font-bold tracking-tight">{currentCourse.tutorialData.title}</h1>
+        <p className="mt-2 text-lg text-muted-foreground">{currentCourse.tutorialData.introduction}</p>
       </div>
       <Accordion type="single" collapsible value={activeChapter} onValueChange={setActiveChapter}>
-        {tutorialData?.chapters.map((chapter, index) => {
-          const isCompleted = completedChapters[index];
-          const isLocked = index > 0 && !completedChapters[index - 1];
+        {currentCourse.tutorialData.chapters.map((chapter, index) => {
+          const isCompleted = currentCourse.completedChapters[index];
+          const isLocked = index > 0 && !currentCourse.completedChapters[index - 1];
           const isCurrentAssessment = activeChapter === `chapter-${index}`;
 
           return (
@@ -400,24 +447,44 @@ export function AiTutor() {
           );
         })}
       </Accordion>
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold">Conclusion</h2>
-        <div className="prose dark:prose-invert max-w-none mt-2">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{tutorialData?.conclusion}</ReactMarkdown>
-        </div>
+      <div className="mt-8 prose dark:prose-invert max-w-none">
+        <h2>Conclusion</h2>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentCourse.tutorialData.conclusion}</ReactMarkdown>
       </div>
-      <Button onClick={() => setView('FORM')} className="mt-8">
-        <Sparkles className="mr-2 h-4 w-4" />
-        Create a New Course
+
+       {allChaptersComplete && (
+         <Alert className="mt-8 border-primary">
+           <Sparkles className="h-4 w-4 text-primary" />
+           <AlertTitle>Course Complete!</AlertTitle>
+           <AlertDescription>
+             Congratulations on finishing the course! You can now start a new one for this skill level.
+           </AlertDescription>
+         </Alert>
+       )}
+
+      <Button onClick={resetTutorial} variant="outline" className="mt-8">
+        <RotateCcw className="mr-2 h-4 w-4" />
+        Start a New Course
       </Button>
     </div>
   );
 
+  const renderContent = () => {
+    switch (view) {
+      case 'GENERATING':
+        return renderGeneratingView();
+      case 'TUTORIAL':
+        return renderTutorialView();
+      case 'FORM':
+      default:
+        return renderInitialForm();
+    }
+  }
+
   return (
-    <div>
-      {view === "FORM" && renderInitialForm()}
-      {view === "GENERATING" && renderGeneratingView()}
-      {view === "TUTORIAL" && tutorialData && renderTutorialView()}
+    <div className="max-w-4xl mx-auto">
+      {currentCourse ? renderTutorialView() : renderInitialForm()}
+      {view === 'GENERATING' && renderGeneratingView()}
     </div>
   );
 }

@@ -13,14 +13,33 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Flame, Trophy, CheckCircle } from "lucide-react";
+import { Flame, Trophy, CheckCircle, BookOpen, Clock, BrainCircuit } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import useLocalStorage from "@/hooks/use-local-storage";
+import { tutorials } from "./tutorials";
 
 type ActivityHistory = {
   date: string;
   count: number;
 }[];
+
+type SkillLevel = "Beginner" | "Intermediate" | "Advanced";
+
+type AiTutorCourseData = {
+  tutorialData: { chapters: any[] };
+  completedChapters: boolean[];
+};
+
+type AiTutorStorage = {
+  [key in SkillLevel]?: AiTutorCourseData;
+};
+
+type AiTutorProgress = {
+  level: SkillLevel;
+  completed: number;
+  total: number;
+  title: string;
+}
 
 const initialChartData = [
   { day: 'Mon', questions: 0 },
@@ -44,10 +63,35 @@ export function Progress() {
   const [completedTutorials] = useLocalStorage<string[]>('completedTutorials', []);
   const [activityHistory] = useLocalStorage<ActivityHistory>('activityHistory', []);
   const [chartData, setChartData] = useState(initialChartData);
+  const [courses] = useLocalStorage<AiTutorStorage>('aiTutor_courses', {});
+  const [learnedQuestions] = useLocalStorage<string[]>('interview-questions-learned', []);
+  const [totalVideoTime, setTotalVideoTime] = useState(0);
+
+  const aiTutorProgress: AiTutorProgress[] = Object.entries(courses).map(([level, data]) => {
+    const completed = data.completedChapters.filter(Boolean).length;
+    const total = data.tutorialData.chapters.length;
+    return {
+        level: level as SkillLevel,
+        completed,
+        total,
+        title: `${level} Course`
+    }
+  });
+
+
+  useEffect(() => {
+    const time = completedTutorials.reduce((acc, title) => {
+      const tutorial = tutorials.find(t => t.title === title);
+      return acc + (tutorial?.duration || 0);
+    }, 0);
+    setTotalVideoTime(time);
+  }, [completedTutorials]);
 
   const progressStats = [
     { title: "Tutorials Completed", value: completedTutorials.length, icon: CheckCircle },
     { title: "Challenges Solved", value: solvedCount, icon: Trophy },
+    { title: "Interview Qs Learned", value: learnedQuestions.length, icon: BrainCircuit },
+    { title: "Video Time Learned", value: `${totalVideoTime} min`, icon: Clock },
     { title: "Current Streak", value: "0 days", icon: Flame },
   ];
 
@@ -106,6 +150,36 @@ export function Progress() {
             </Card>
           ))}
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Tutor Progress</CardTitle>
+            <CardDescription>Your chapter progress in AI-generated courses.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-3">
+            {(['Beginner', 'Intermediate', 'Advanced'] as SkillLevel[]).map(level => {
+              const progress = aiTutorProgress.find(p => p.level === level);
+              return (
+                <Card key={level}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{level} Course</CardTitle>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                        {progress ? `${progress.completed} / ${progress.total}` : '0 / 0'}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        {progress ? 'chapters completed' : 'No course started'}
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </CardContent>
+        </Card>
+
+
         <Card>
           <CardHeader>
             <CardTitle>Weekly Activity</CardTitle>

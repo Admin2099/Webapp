@@ -16,7 +16,7 @@ import { Youtube, CheckCircle } from "lucide-react";
 import useLocalStorage from "@/hooks/use-local-storage";
 
 
-const tutorials = [
+export const tutorials = [
   {
     title: "Introduction to SQL",
     description: "Master the basics of SQL for data querying and manipulation.",
@@ -24,6 +24,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "database query",
     videoUrl: "https://www.youtube.com/watch?v=HXV3zeQKqGY",
+    duration: 30, // in minutes
   },
   {
     title: "Python for Data Analysis",
@@ -32,6 +33,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "python code",
     videoUrl: "https://www.youtube.com/watch?v=r-uOLxNrNk8",
+    duration: 45,
   },
   {
     title: "Advanced Power BI",
@@ -40,6 +42,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "dashboard chart",
     videoUrl: "https://www.youtube.com/watch?v=3u7kQp-i564",
+    duration: 60,
   },
   {
     title: "Excel for Beginners",
@@ -48,6 +51,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "spreadsheet software",
     videoUrl: "https://www.youtube.com/watch?v=Vl0H-qTclOg",
+    duration: 25,
   },
     {
     title: "Statistics for Data Science",
@@ -56,6 +60,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "statistics graph",
     videoUrl: "https://www.youtube.com/watch?v=xxpc-3sLdes",
+    duration: 50,
   },
   {
     title: "Tableau for Beginners",
@@ -64,6 +69,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "tableau dashboard",
     videoUrl: "https://www.youtube.com/watch?v=aHnwS_Mxx_4",
+    duration: 35,
   },
   {
     title: "SQL Joins and Subqueries",
@@ -72,6 +78,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "database schema",
     videoUrl: "https://www.youtube.com/watch?v=2HVMi26L54g",
+    duration: 40,
   },
   {
     title: "Data Visualization in Python",
@@ -80,6 +87,7 @@ const tutorials = [
     image: "https://placehold.co/600x400.png",
     dataAiHint: "data graph",
     videoUrl: "https://www.youtube.com/watch?v=a9UrKTVEeZA",
+    duration: 55,
   },
 ];
 
